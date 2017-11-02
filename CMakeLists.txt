@@ -119,15 +119,15 @@ endif()
 # configure the package description file.
 # this configuration will reference the build directory
 # so this configuration should stay in the build dir (and not be installed)
-set(DARKNET_PACKAGE_INCLUDE_DIR ${CMAKE_SOURCE_DIR})
-set(DARKNET_PACKAGE_LIBRARY_DIR ${CMAKE_BINARY_DIR})
+set(DARKNET_PACKAGE_INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
+set(DARKNET_PACKAGE_LIBRARY_DIR ${CMAKE_BINARY_DIR}/lib)
 configure_file( DarknetConfig.cmake.in
   ${CMAKE_BINARY_DIR}/DarknetConfig.cmake @ONLY )
 
 # now make a package description that references the install locations include and libs
 # this file will be installed to the requested install location when an install is requested
-set(DARKNET_PACKAGE_INCLUDE_DIR ${CMAKE_INSTALL_PREFIX})
-set(DARKNET_PACKAGE_LIBRARY_DIR ${CMAKE_INSTALL_PREFIX})
+set(DARKNET_PACKAGE_INCLUDE_DIR ${CMAKE_INSTALL_PREFIX}/include/darknet)
+set(DARKNET_PACKAGE_LIBRARY_DIR ${CMAKE_INSTALL_PREFIX}/lib)
 configure_file( DarknetConfig.cmake.in
   ${CMAKE_BINARY_DIR}/DarknetConfig.cmake.install @ONLY )
 
