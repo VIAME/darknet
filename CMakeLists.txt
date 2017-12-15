@@ -42,8 +42,13 @@ if( USE_GPU )
     set( CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -DCUDNN )
   endif()
 
-  set( CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}
-    -gencode arch=compute_20,code=[sm_20,sm_21]
+  if (CUDA_VERSION VERSION_LESS 9.0)
+    list(APPEND CUDA_NVCC_FLAGS
+      -gencode arch=compute_20,code=[sm_20,sm_21]
+      )
+  endif()
+
+  list(APPEND CUDA_NVCC_FLAGS
     -gencode arch=compute_30,code=sm_30
     -gencode arch=compute_35,code=sm_35
     -gencode arch=compute_50,code=[sm_50,compute_50]

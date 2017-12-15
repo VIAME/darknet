@@ -9,105 +9,35 @@
 
 #include "utils.h"
 
-#ifdef WIN32
-#include "unistd.h"
-#pragma warning(disable: 4996)
-
-#include <winsock.h>
-#define CLOCK_REALTIME 0
-
-LARGE_INTEGER getFILETIMEoffset()
-{
-    SYSTEMTIME s;
-    FILETIME f;
-    LARGE_INTEGER t;
-
-    s.wYear = 1970;
-    s.wMonth = 1;
-    s.wDay = 1;
-    s.wHour = 0;
-    s.wMinute = 0;
-    s.wSecond = 0;
-    s.wMilliseconds = 0;
-    SystemTimeToFileTime(&s, &f);
-    t.QuadPart = f.dwHighDateTime;
-    t.QuadPart <<= 32;
-    t.QuadPart |= f.dwLowDateTime;
-    return (t);
-}
-
-int clock_gettime(int X, struct timespec *tv)
-{
-    LARGE_INTEGER           t;
-    FILETIME                f;
-    double                  nanoseconds;
-    static LARGE_INTEGER    offset;
-    static double           frequencyToNanoseconds;
-    static int              initialized = 0;
-    static BOOL             usePerformanceCounter = 0;
-
-    if(!initialized)
-    {
-        LARGE_INTEGER performanceFrequency;
-        initialized = 1;
-        usePerformanceCounter = QueryPerformanceFrequency(&performanceFrequency);
-
-        if(usePerformanceCounter)
-        {
-            QueryPerformanceCounter(&offset);
-            frequencyToNanoseconds = (double)performanceFrequency.QuadPart / 1000000000.;
-        }
-        else
-        {
-            offset = getFILETIMEoffset();
-            frequencyToNanoseconds = 10.;
-        }
-    }
-    if(usePerformanceCounter)
-    {
-        QueryPerformanceCounter(&t);
-    }
-    else
-    {
-        GetSystemTimeAsFileTime(&f);
-        t.QuadPart = f.dwHighDateTime;
-        t.QuadPart <<= 32;
-        t.QuadPart |= f.dwLowDateTime;
-    }
-
-    t.QuadPart -= offset.QuadPart;
-    nanoseconds = (double)t.QuadPart / frequencyToNanoseconds;
-    t.QuadPart = nanoseconds;
-    tv->tv_sec = t.QuadPart / 1000000000;
-    tv->tv_nsec = t.QuadPart % 1000000000;
-    return 0;
-}
+#if defined(_WIN32) && !defined(__CYGWIN__)
+  #include <unistd.h>
+  #include <Windows.h>
+  #pragma warning(disable: 4996)
 #elif MAC
-#include <mach/clock.h>
-#include <mach/mach.h>
 
-#define CLOCK_REALTIME 0
-
-int clock_gettime(int X, struct timespec *tv)
-{
-    clock_serv_t cclock;
-    mach_timespec_t mts;
-    host_get_clock_service(mach_host_self(), CALENDAR_CLOCK, &cclock);
-    clock_get_time(cclock, &mts);
-    mach_port_deallocate(mach_task_self(), cclock);
-    tv->tv_sec = mts.tv_sec;
-    tv->tv_nsec = mts.tv_nsec;
-    return 0;
-}
 #else
-#include <unistd.h>
+ #include <unistd.h>
+ #include <sys/time.h>
 #endif
 
 double what_time_is_it_now()
 {
-    struct timespec now;
-    clock_gettime(CLOCK_REALTIME, &now);
-    return now.tv_sec + now.tv_nsec*1e-9;
+#if defined(_WIN32) && !defined(__CYGWIN__)
+  FILETIME ft;
+  GetSystemTimeAsFileTime(&ft);
+  return (429.4967296*ft.dwHighDateTime
+    + 0.0000001*ft.dwLowDateTime
+    - 11644473600.0);
+#else
+  struct timeval t;
+  gettimeofday(&t, 0);
+  return 1.0*(double)t.tv_sec + 0.000001*(double)t.tv_usec;
+
+  // Inconsistent support for clock_gettime on various platforms
+  //struct timespec now;
+  //clock_gettime(CLOCK_REALTIME, &now);
+  //return now.tv_sec + now.tv_nsec*1e-9;
+#endif
 }
 
 int *read_intlist(char *gpu_list, int *ngpus, int d)
