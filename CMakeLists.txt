@@ -95,6 +95,7 @@ if( USE_OPENCV )
   include_directories( SYSTEM ${OpenCV_INCLUDE_DIRS} )
   add_definitions( -DOPENCV )
   add_definitions( -DCV_MAJOR_VERSION=${OpenCV_VERSION_MAJOR} )
+  add_definitions( -DCV_IGNORE_DEBUG_BUILD_GUARD )
   list( APPEND DARKNET_LINKED_LIBS opencv_core opencv_highgui opencv_imgproc )
 
   if( OpenCV_VERSION_MAJOR GREATER 2 )
