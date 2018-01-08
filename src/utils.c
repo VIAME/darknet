@@ -220,6 +220,26 @@ void find_replace(char *str, char *orig, char *rep, char *output)
     sprintf(output, "%s%s%s", buffer, rep, p+strlen(orig));
 }
 
+void find_replace_ext(char *str, char *orig, char *rep, char *output)
+{
+    char buffer[4096] = {0};
+    char *p;
+
+    sprintf(buffer, "%s", str);
+
+    if( (p = strrchr(str,'.') ) != NULL)
+    {
+        if(strcmp(p,orig) == 0)
+        {
+            p = strrchr(buffer,'.');
+            strcpy(p,rep);
+            sprintf(output, "%s", buffer);
+        }
+    }
+
+    sprintf(output, "%s", str);
+}
+
 float sec(clock_t clocks)
 {
     return (float)clocks/CLOCKS_PER_SEC;
