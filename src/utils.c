@@ -171,7 +171,11 @@ char *basecfg(char *cfgfile)
 {
     char *c = cfgfile;
     char *next;
+#ifdef WIN32
+    while((next = strchr(c, '\\')))
+#else
     while((next = strchr(c, '/')))
+#endif
     {
         c = next+1;
     }
