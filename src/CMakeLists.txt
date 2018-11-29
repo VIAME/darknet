@@ -12,7 +12,6 @@ set( gpu_source
   dropout_layer_kernels.cu
   im2col_kernels.cu
   maxpool_layer_kernels.cu
-  network_kernels.cu
 )
 
 set( source
@@ -40,9 +39,12 @@ set( source
   gru_layer.c
   im2col.c
   image.c
+  iseg_layer.c
+  l2norm_layer.c
   layer.c
   list.c
   local_layer.c
+  logistic_layer.c
   lstm_layer.c
   matrix.c
   maxpool_layer.c
@@ -57,7 +59,9 @@ set( source
   shortcut_layer.c
   softmax_layer.c
   tree.c
+  upsample_layer.c
   utils.c
+  yolo_layer.c
   )
 
 set( headers
@@ -84,9 +88,12 @@ set( headers
   gru_layer.h
   im2col.h
   image.h
+  iseg_layer.h
+  l2norm_layer.h
   layer.h
   list.h
   local_layer.h
+  logistic_layer.h
   lstm_layer.h
   matrix.h
   maxpool_layer.h
@@ -103,7 +110,9 @@ set( headers
   stb_image.h
   stb_image_write.h
   tree.h
+  upsample_layer.h
   utils.h
+  yolo_layer.h
   )
 
 if( WIN32 )
