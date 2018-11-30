@@ -14,10 +14,7 @@ void train_compare(char *cfgfile, char *weightfile)
     char *base = basecfg(cfgfile);
     char *backup_directory = "/home/pjreddie/backup/";
     printf("%s\n", base);
-    network *net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(net, weightfile);
-    }
+    network *net = load_network(cfgfile, weightfile, 0);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     int imgs = 1024;
     list *plist = get_paths("data/compare.train.list");
@@ -81,10 +78,7 @@ void train_compare(char *cfgfile, char *weightfile)
 void validate_compare(char *filename, char *weightfile)
 {
     int i = 0;
-    network *net = parse_network_cfg(filename);
-    if(weightfile){
-        load_weights(net, weightfile);
-    }
+    network *net = load_network(filename, weightfile, 0);
     srand(time(0));
 
     list *plist = get_paths("data/compare.val.list");
@@ -227,10 +221,7 @@ void bbox_fight(network *net, sortable_bbox *a, sortable_bbox *b, int classes, i
 void SortMaster3000(char *filename, char *weightfile)
 {
     int i = 0;
-    network *net = parse_network_cfg(filename);
-    if(weightfile){
-        load_weights(net, weightfile);
-    }
+    network *net = load_network(filename, weightfile, 0);
     srand(time(0));
     set_batch_network(net, 1);
 
@@ -259,10 +250,7 @@ void BattleRoyaleWithCheese(char *filename, char *weightfile)
 {
     int classes = 20;
     int i,j;
-    network *net = parse_network_cfg(filename);
-    if(weightfile){
-        load_weights(net, weightfile);
-    }
+    network *net = load_network(filename, weightfile, 0);
     srand(time(0));
     set_batch_network(net, 1);
 

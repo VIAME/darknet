@@ -7,10 +7,7 @@ void train_writing(char *cfgfile, char *weightfile)
     float avg_loss = -1;
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
-    network *net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(net, weightfile);
-    }
+    network *net = load_network(cfgfile, weightfile, 0);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     int imgs = net->batch*net->subdivisions;
     list *plist = get_paths("figures.list");
@@ -80,10 +77,7 @@ void train_writing(char *cfgfile, char *weightfile)
 
 void test_writing(char *cfgfile, char *weightfile, char *filename)
 {
-    network *net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(net, weightfile);
-    }
+    network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     srand(2222222);
     clock_t time;

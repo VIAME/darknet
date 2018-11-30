@@ -9,10 +9,7 @@ void train_dice(char *cfgfile, char *weightfile)
     char *base = basecfg(cfgfile);
     char *backup_directory = "/home/pjreddie/backup/";
     printf("%s\n", base);
-    network *net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(net, weightfile);
-    }
+    network *net = load_network(cfgfile, weightfile, 0);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     int imgs = 1024;
     int i = *net->seen/imgs;
@@ -44,10 +41,7 @@ void train_dice(char *cfgfile, char *weightfile)
 
 void validate_dice(char *filename, char *weightfile)
 {
-    network *net = parse_network_cfg(filename);
-    if(weightfile){
-        load_weights(net, weightfile);
-    }
+    network *net = load_network(filename, weightfile, 0);
     srand(time(0));
 
     char **labels = dice_labels;
@@ -65,10 +59,7 @@ void validate_dice(char *filename, char *weightfile)
 
 void test_dice(char *cfgfile, char *weightfile, char *filename)
 {
-    network *net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(net, weightfile);
-    }
+    network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(net, 1);
     srand(2222222);
     int i = 0;

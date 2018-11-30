@@ -75,10 +75,7 @@ void train_vid_rnn(char *cfgfile, char *weightfile)
     char *base = basecfg(cfgfile);
     printf("%s\n", base);
     float avg_loss = -1;
-    network *net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(net, weightfile);
-    }
+    network *net = load_network(cfgfile, weightfile, 0);
     printf("Learning Rate: %g, Momentum: %g, Decay: %g\n", net->learning_rate, net->momentum, net->decay);
     int imgs = net->batch*net->subdivisions;
     int i = *net->seen/imgs;
@@ -148,10 +145,7 @@ void generate_vid_rnn(char *cfgfile, char *weightfile)
     network *extractor = parse_network_cfg("cfg/extractor.recon.cfg");
     load_weights(extractor, "/home/pjreddie/trained/yolo-coco.conv");
 
-    network *net = parse_network_cfg(cfgfile);
-    if(weightfile){
-        load_weights(net, weightfile);
-    }
+    network *net = load_network(cfgfile, weightfile, 0);
     set_batch_network(extractor, 1);
     set_batch_network(net, 1);
 
