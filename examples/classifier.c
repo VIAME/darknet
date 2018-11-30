@@ -344,9 +344,8 @@ void validate_classifier_full(char *datacfg, char *filename, char *weightfile)
         image im = load_image_color(paths[i], 0, 0);
         image resized = resize_min(im, size);
         resize_network(net, resized.w, resized.h);
-        //show_image(im, "orig");
-        //show_image(crop, "cropped");
-        //cvWaitKey(0);
+        //show_image(im, "orig", 1);
+        //show_image(crop, "cropped", 0);
         float *pred = network_predict(net, resized.data);
         if(net->hierarchy) hierarchy_predictions(pred, net->outputs, net->hierarchy, 1, 1);
 
@@ -403,9 +402,8 @@ void validate_classifier_single(char *datacfg, char *filename, char *weightfile)
         image im = load_image_color(paths[i], 0, 0);
         image crop = center_crop_image(im, net->w, net->h);
         //grayscale_image_3c(crop);
-        //show_image(im, "orig");
-        //show_image(crop, "cropped");
-        //cvWaitKey(0);
+        //show_image(im, "orig", 1);
+        //show_image(crop, "cropped", 0);
         float *pred = network_predict(net, crop.data);
         if(net->hierarchy) hierarchy_predictions(pred, net->outputs, net->hierarchy, 1, 1);
 

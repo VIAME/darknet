@@ -618,7 +618,7 @@ image *visualize_convolutional_layer(convolutional_layer l, char *window, image 
     image dc = collapse_image_layers(delta, 1);
     char buff[256];
     sprintf(buff, "%s: Output", window);
-    //show_image(dc, buff);
+    //show_image(dc, buff, 1);
     //save_image(dc, buff);
     free_image(dc);
     return single_weights;

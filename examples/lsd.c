@@ -150,8 +150,7 @@ void train_lsd3(char *fcfg, char *fweight, char *gcfg, char *gweight, char *acfg
 */
 /*
         image sim = float_to_image(anet->w, anet->h, anet->c, style.X.vals[j]);
-        show_image(sim, "style");
-        cvWaitKey(0);
+        show_image(sim, "style", 0);
         */
         /*
 
@@ -311,9 +310,8 @@ void train_pix2pix(char *cfg, char *weight, char *acfg, char *aweight, int clear
             /*
             image origi = float_to_image(net->w, net->h, 3, pixs);
             image grayi = float_to_image(net->w, net->h, 3, graypixs);
-            show_image(grayi, "gray");
-            show_image(origi, "orig");
-            cvWaitKey(0);
+            show_image(grayi, "gray", 1);
+            show_image(origi, "orig", 0);
             */
             /*
             *net->seen += net->batch;
@@ -956,9 +954,8 @@ void train_colorizer(char *cfg, char *weight, char *acfg, char *aweight, int cle
             /*
                image origi = float_to_image(net->w, net->h, 3, pixs);
                image grayi = float_to_image(net->w, net->h, 3, graypixs);
-               show_image(grayi, "gray");
-               show_image(origi, "orig");
-               cvWaitKey(0);
+               show_image(grayi, "gray", 1);
+               show_image(origi, "orig", 0);
              */
             *net->seen += net->batch;
             forward_network_gpu(net);

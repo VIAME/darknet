@@ -216,10 +216,9 @@ extern "C" void forward_crop_layer_gpu(crop_layer layer, network net)
        translate_image(im3, -translate);
        scale_image(im3, 1/scale);
        
-       show_image(im, "cropped");
-       show_image(im2, "cropped2");
-       show_image(im3, "cropped3");
-       cvWaitKey(0);
+       show_image(im, "cropped", 1);
+       show_image(im2, "cropped2", 1);
+       show_image(im3, "cropped3", 0);
        */
 }
 

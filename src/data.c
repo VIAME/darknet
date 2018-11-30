@@ -127,9 +127,8 @@ matrix load_image_augment_paths(char **paths, int n, int min, int max, int size,
         random_distort_image(crop, hue, saturation, exposure);
 
         /*
-        show_image(im, "orig");
-        show_image(crop, "crop");
-        cvWaitKey(0);
+        show_image(im, "orig", 1);
+        show_image(crop, "crop", 0);
         */
         //grayscale_image_3c(crop);
         free_image(im);
@@ -776,9 +775,8 @@ data load_data_seg(int n, char **paths, int m, int w, int h, int classes, int mi
 
         /*
            image rgb = mask_to_rgb(sized_m, classes);
-           show_image(rgb, "part");
-           show_image(sized, "orig");
-           cvWaitKey(0);
+           show_image(rgb, "part", 1);
+           show_image(sized, "orig", 0);
            free_image(rgb);
          */
     }
@@ -808,7 +806,7 @@ data load_data_iseg(int n, char **paths, int m, int w, int h, int classes, int b
         if(flip) flip_image(sized);
         random_distort_image(sized, hue, saturation, exposure);
         d.X.vals[i] = sized.data;
-        //show_image(sized, "image");
+        //show_image(sized, "image", 1);
 
         fill_truth_iseg(random_paths[i], boxes, d.y.vals[i], classes, orig.w, orig.h, a, flip, w/div, h/div);
 
@@ -816,9 +814,8 @@ data load_data_iseg(int n, char **paths, int m, int w, int h, int classes, int b
 
         /*
            image rgb = mask_to_rgb(sized_m, classes);
-           show_image(rgb, "part");
-           show_image(sized, "orig");
-           cvWaitKey(0);
+           show_image(rgb, "part", 1);
+           show_image(sized, "orig", 0);
            free_image(rgb);
          */
     }
@@ -848,7 +845,7 @@ data load_data_mask(int n, char **paths, int m, int w, int h, int classes, int b
         if(flip) flip_image(sized);
         random_distort_image(sized, hue, saturation, exposure);
         d.X.vals[i] = sized.data;
-        //show_image(sized, "image");
+        //show_image(sized, "image", 1);
 
         fill_truth_mask(random_paths[i], boxes, d.y.vals[i], classes, orig.w, orig.h, a, flip, 14, 14);
 
@@ -856,9 +853,8 @@ data load_data_mask(int n, char **paths, int m, int w, int h, int classes, int b
 
         /*
            image rgb = mask_to_rgb(sized_m, classes);
-           show_image(rgb, "part");
-           show_image(sized, "orig");
-           cvWaitKey(0);
+           show_image(rgb, "part", 1);
+           show_image(sized, "orig", 0);
            free_image(rgb);
          */
     }

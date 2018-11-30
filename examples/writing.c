@@ -54,11 +54,10 @@ void train_writing(char *cfgfile, char *weightfile)
            image im = float_to_image(256, 256, 3, train.X.vals[0]);
            image lab = float_to_image(64, 64, 1, train.y.vals[0]);
            image pred = float_to_image(64, 64, 1, out);
-           show_image(im, "image");
-           show_image(lab, "label");
+           show_image(im, "image", 1);
+           show_image(lab, "label", 1);
            print_image(lab);
-           show_image(pred, "pred");
-           cvWaitKey(0);
+           show_image(pred, "pred", 0);
          */
 
         if(avg_loss == -1) avg_loss = loss;

@@ -103,8 +103,7 @@ void train_detector(char *datacfg, char *cfgfile, char *weightfile, int *gpus, i
            printf("%f %f %f %f\n", b.x, b.y, b.w, b.h);
            draw_bbox(im, b, 1, 1,0,0);
            }
-           show_image(im, "truth11");
-           cvWaitKey(0);
+           show_image(im, "truth11", 0);
            save_image(im, "truth11");
            }
          */
@@ -675,8 +674,7 @@ void censor_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_ind
                 censor_image(in, left, top, b.w, b.h);
             }
         }
-        show_image(in, base);
-        cvWaitKey(10);
+        show_image(in, base, 10);
         free_detections(dets, nboxes);
 
 
@@ -734,7 +732,7 @@ void extract_detector(char *datacfg, char *cfgfile, char *weightfile, int cam_in
         image in_s = letterbox_image(in, net->w, net->h);
         layer l = net->layers[net->n-1];
 
-        show_image(in, base);
+        show_image(in, base, 1);
 
         int nboxes = 0;
         float *X = in_s.data;

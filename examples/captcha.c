@@ -70,8 +70,7 @@ void train_captcha(char *cfgfile, char *weightfile)
 
         /*
            image im = float_to_image(256, 256, 3, train.X.vals[114]);
-           show_image(im, "training");
-           cvWaitKey(0);
+           show_image(im, "training", 0);
          */
 
         load_thread = load_data_in_thread(args);
@@ -224,10 +223,7 @@ void valid_captcha(char *cfgfile, char *weightfile, char *filename)
    float *X = im.data;
    float *predictions = network_predict(net, X);
    image out  = float_to_image(300, 57, 1, predictions);
-   show_image(out, "decoded");
-#ifdef OPENCV
-cvWaitKey(0);
-#endif
+   show_image(out, "decoded", 0);
 free_image(im);
 }
 }

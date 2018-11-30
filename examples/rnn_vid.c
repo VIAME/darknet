@@ -42,8 +42,7 @@ float_pair get_rnn_vid_data(network net, char **files, int n, int batch, int ste
             image im = ipl_to_image(src);
             rgbgr_image(im);
             image re = resize_image(im, net.w, net.h);
-            //show_image(re, "loaded");
-            //cvWaitKey(10);
+            //show_image(re, "loaded", 10);
             memcpy(input + i*input_size, re.data, input_size*sizeof(float));
             free_image(im);
             free_image(re);

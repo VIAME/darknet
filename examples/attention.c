@@ -177,13 +177,12 @@ void train_attention(char *datacfg, char *cfgfile, char *weightfile, int *gpus, 
         free_data(best);
         printf("\n");
         image im = float_to_image(64,64,3,resized.X.vals[0]);
-        //show_image(im, "orig");
-        //cvWaitKey(100);
+        //show_image(im, "orig", 100);
         /*
            image im1 = float_to_image(64,64,3,tiles[i].X.vals[0]);
            image im2 = float_to_image(64,64,3,resized.X.vals[0]);
-           show_image(im1, "tile");
-           show_image(im2, "res");
+           show_image(im1, "tile", 1);
+           show_image(im2, "res", 1);
          */
 #ifdef GPU
         if (ngpus == 1) {
@@ -275,9 +274,8 @@ void validate_attention_single(char *datacfg, char *filename, char *weightfile)
         image resized = resize_min(im, net->w*divs/size);
         image crop = crop_image(resized, (resized.w - net->w*divs/size)/2, (resized.h - net->h*divs/size)/2, net->w*divs/size, net->h*divs/size);
         image rcrop = resize_image(crop, net->w, net->h);
-        //show_image(im, "orig");
-        //show_image(crop, "cropped");
-        //cvWaitKey(0);
+        //show_image(im, "orig", 1);
+        //show_image(crop, "cropped", 0);
         float *pred = network_predict(net, rcrop.data);
         //pred[classes + 56] = 0;
         for(j = 0; j < divs*divs; ++j){
