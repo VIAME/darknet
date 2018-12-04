@@ -12,6 +12,8 @@ else()
   OPTION( BUILD_SHARED_LIBS  "Build components shared or not"  TRUE )
 endif()
 
+OPTION( BUILD_EXAMPLES  "Build folder of examples (beware, some of the ones requiring OpenCV don't work)"  FALSE )
+
 OPTION( USE_GPU      "Use GPU support"      FALSE )
 OPTION( USE_CUDNN    "Use CUDNN support"    FALSE )
 OPTION( USE_OPENCV   "Use OpenCV support"   FALSE )
@@ -116,7 +118,9 @@ endif()
 
 add_subdirectory( include )
 add_subdirectory( src )
-add_subdirectory( examples )
+if( BUILD_EXAMPLES )
+  add_subdirectory( examples )
+endif()
 
 if( WIN32 )
   add_subdirectory( 3rdparty )
