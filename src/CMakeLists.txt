@@ -39,6 +39,7 @@ set( source
   gru_layer.c
   im2col.c
   image.c
+  image_opencv.cpp
   iseg_layer.c
   l2norm_layer.c
   layer.c
