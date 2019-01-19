@@ -3,7 +3,10 @@
 #include "blas.h"
 #include "cuda.h"
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <math.h>
+#include <unistd.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -1289,9 +1292,108 @@ void test_resize(char *filename)
 #endif
 }
 
+char *get_channel_filename(char *filename, int channel)
+{
+    const char *ext;
+    char* output;
+    char id[10];
+    int no_ext_length;
+
+    ext = strrchr(filename, '.');
+    if(!ext || ext == filename){
+        ext = "";
+    }
+    else{
+        ext = ext + 1;
+    }
+
+    snprintf(id, 10, "%d", channel);
+    no_ext_length = strlen(filename) - strlen(ext) - 1;
+
+    output = malloc(no_ext_length + strlen(id) + strlen(ext) + 3);
+
+    strncpy(output, filename, strlen(ext)-1);
+    strcat(output, "_");
+    strcat(output, id);
+    strcat(output, ".");
+    strcat(output, ext);
+
+    return output;
+}
+
+int does_file_exist(const char *filename)
+{
+    if(access(filename,R_OK) != -1){
+        return 1;
+    }
+    else{
+        return 0;
+    }
+}
+
+image load_image_stb_multi_image(char *filename, int channels)
+{
+    int w, h, tc;
+    char *chan_filename;
+
+    if(channels){
+        tc = channels;
+    }
+    else{
+        tc = 1;
+        while(1){
+            chan_filename = get_channel_filename(filename, tc);
+            if(does_file_exist(chan_filename)){
+                tc++;
+                free(chan_filename);
+            }
+            else{
+                free(chan_filename);
+                break;
+            }
+        }
+    }
+
+    image im = make_image(w, h, tc);
+
+    int i, j, ic, oc;
+    unsigned char *data;
+
+    for(oc=0; oc < tc; ++oc){
+        if (oc==0) {
+            data = stbi_load(filename, &w, &h, &ic, 1);
+        }
+        else{
+            chan_filename = get_channel_filename(filename, oc);
+            data = stbi_load(filename, &w, &h, &ic, 1);
+            free(chan_filename);
+        }
+        if (!data) {
+            fprintf(stderr, "Cannot load image \"%s\"\nSTB Reason: %s\n", filename, stbi_failure_reason());
+            exit(0);
+        }
+        if (ic != 1) {
+            fprintf(stderr, "Cannot load image, channel sub-image contains more than 1 channel\n");
+            exit(0);
+        }
+
+        for(j = 0; j < h; ++j){
+            for(i = 0; i < w; ++i){
+                int dst_index = i + w*j + w*h*oc;
+                int src_index = i + w*j;
+                im.data[dst_index] = (float)data[src_index]/255.;
+            }
+        }
+        free(data);
+    }
+    return im;
+}
 
 image load_image_stb(char *filename, int channels)
 {
+    if(channels > 3 && does_file_exist(get_channel_filename(filename,1))){
+        return load_image_stb_multi_image(filename,channels);
+    }
     int w, h, c;
     unsigned char *data = stbi_load(filename, &w, &h, &c, channels);
     if (!data) {
