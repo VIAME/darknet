@@ -78,7 +78,7 @@ matrix load_image_paths_gray(char **paths, int n, int w, int h)
     X.cols = 0;
 
     for(i = 0; i < n; ++i){
-        image im = load_image(paths[i], w, h, 3);
+        image im = load_image(paths[i], w, h, 0);
 
         image gray = grayscale_image(im);
         free_image(im);
@@ -99,7 +99,7 @@ matrix load_image_paths(char **paths, int n, int w, int h)
     X.cols = 0;
 
     for(i = 0; i < n; ++i){
-        image im = load_image_color(paths[i], w, h);
+        image im = load_image(paths[i], w, h, 0);
         X.vals[i] = im.data;
         X.cols = im.h*im.w*im.c;
     }
@@ -115,7 +115,7 @@ matrix load_image_augment_paths(char **paths, int n, int min, int max, int size,
     X.cols = 0;
 
     for(i = 0; i < n; ++i){
-        image im = load_image_color(paths[i], 0, 0);
+        image im = load_image(paths[i], 0, 0, 0);
         image crop;
         if(center){
             crop = center_crop_image(im, size, size);
@@ -754,7 +754,7 @@ data load_data_seg(int n, char **paths, int m, int w, int h, int classes, int mi
     d.y.vals = calloc(d.X.rows, sizeof(float*));
 
     for(i = 0; i < n; ++i){
-        image orig = load_image_color(random_paths[i], 0, 0);
+        image orig = load_image(random_paths[i], 0, 0, 0);
         augment_args a = random_augment_args(orig, angle, aspect, min, max, w, h);
         image sized = rotate_crop_image(orig, a.rad, a.scale, a.w, a.h, a.dx, a.dy, a.aspect);
 
@@ -798,7 +798,7 @@ data load_data_iseg(int n, char **paths, int m, int w, int h, int classes, int b
     d.y = make_matrix(n, (((w/div)*(h/div))+1)*boxes);
 
     for(i = 0; i < n; ++i){
-        image orig = load_image_color(random_paths[i], 0, 0);
+        image orig = load_image(random_paths[i], 0, 0, 0);
         augment_args a = random_augment_args(orig, angle, aspect, min, max, w, h);
         image sized = rotate_crop_image(orig, a.rad, a.scale, a.w, a.h, a.dx, a.dy, a.aspect);
 
@@ -837,7 +837,7 @@ data load_data_mask(int n, char **paths, int m, int w, int h, int classes, int b
     d.y = make_matrix(n, (coords+1)*boxes);
 
     for(i = 0; i < n; ++i){
-        image orig = load_image_color(random_paths[i], 0, 0);
+        image orig = load_image(random_paths[i], 0, 0, 0);
         augment_args a = random_augment_args(orig, angle, aspect, min, max, w, h);
         image sized = rotate_crop_image(orig, a.rad, a.scale, a.w, a.h, a.dx, a.dy, a.aspect);
 
@@ -877,7 +877,7 @@ data load_data_region(int n, char **paths, int m, int w, int h, int size, int cl
     int k = size*size*(5+classes);
     d.y = make_matrix(n, k);
     for(i = 0; i < n; ++i){
-        image orig = load_image_color(random_paths[i], 0, 0);
+        image orig = load_image(random_paths[i], 0, 0, 0);
 
         int oh = orig.h;
         int ow = orig.w;
@@ -930,8 +930,8 @@ data load_data_compare(int n, char **paths, int m, int classes, int w, int h)
     int k = 2*(classes);
     d.y = make_matrix(n, k);
     for(i = 0; i < n; ++i){
-        image im1 = load_image_color(paths[i*2],   w, h);
-        image im2 = load_image_color(paths[i*2+1], w, h);
+        image im1 = load_image(paths[i*2],   w, h, 0);
+        image im2 = load_image(paths[i*2+1], w, h, 0);
 
         d.X.vals[i] = calloc(d.X.cols, sizeof(float));
         memcpy(d.X.vals[i],         im1.data, h*w*3*sizeof(float));
@@ -985,7 +985,7 @@ data load_data_swag(char **paths, int n, int classes, float jitter)
     int index = rand_int()%n;
     char *random_path = paths[index];
 
-    image orig = load_image_color(random_path, 0, 0);
+    image orig = load_image(random_path, 0, 0, 0);
     int h = orig.h;
     int w = orig.w;
 
@@ -1046,7 +1046,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 
     d.y = make_matrix(n, 5*boxes);
     for(i = 0; i < n; ++i){
-        image orig = load_image_color(random_paths[i], 0, 0);
+        image orig = load_image(random_paths[i], 0, 0, 0);
         image sized = make_image(w, h, orig.c);
         fill_image(sized, .5);
 
@@ -1072,7 +1072,7 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 
         place_image(orig, nw, nh, dx, dy, sized);
 
-        random_distort_image(sized, hue, saturation, exposure);
+        //random_distort_image(sized, hue, saturation, exposure);
 
         int flip = rand_int()%2;
         if(flip) flip_image(sized);
@@ -1121,10 +1121,10 @@ void *load_thread(void *ptr)
     } else if (a.type == COMPARE_DATA){
         *a.d = load_data_compare(a.n, a.paths, a.m, a.classes, a.w, a.h);
     } else if (a.type == IMAGE_DATA){
-        *(a.im) = load_image_color(a.path, 0, 0);
+        *(a.im) = load_image(a.path, 0, 0, 0);
         *(a.resized) = resize_image(*(a.im), a.w, a.h);
     } else if (a.type == LETTERBOX_DATA){
-        *(a.im) = load_image_color(a.path, 0, 0);
+        *(a.im) = load_image(a.path, 0, 0, 0);
         *(a.resized) = letterbox_image(*(a.im), a.w, a.h);
     } else if (a.type == TAG_DATA){
         *a.d = load_data_tag(a.paths, a.n, a.m, a.classes, a.min, a.max, a.size, a.angle, a.aspect, a.hue, a.saturation, a.exposure);
@@ -1244,7 +1244,7 @@ data load_data_super(char **paths, int n, int m, int w, int h, int scale)
     d.y.cols = w*scale * h*scale * 3;
 
     for(i = 0; i < n; ++i){
-        image im = load_image_color(paths[i], 0, 0);
+        image im = load_image(paths[i], 0, 0, 0);
         image crop = random_crop_image(im, w*scale, h*scale);
         int flip = rand_int()%2;
         if (flip) flip_image(crop);
