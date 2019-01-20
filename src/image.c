@@ -1246,7 +1246,7 @@ image resize_image(image im, int w, int h)
 
 void test_resize(char *filename)
 {
-    image im = load_image(filename, 0,0, 3);
+    image im = load_image(filename, 0, 0, 0);
     float mag = mag_array(im.data, im.w*im.h*im.c);
     printf("L2 Norm: %f\n", mag);
     image gray = grayscale_image(im);
@@ -1312,7 +1312,9 @@ char *get_channel_filename(char *filename, int channel)
 
     output = malloc(no_ext_length + strlen(id) + strlen(ext) + 3);
 
-    strncpy(output, filename, strlen(ext)-1);
+    strncpy(output, filename, no_ext_length);
+    output[no_ext_length] = '\0';
+
     strcat(output, "_");
     strcat(output, id);
     strcat(output, ".");
@@ -1354,18 +1356,15 @@ image load_image_stb_multi_image(char *filename, int channels)
         }
     }
 
+    int i, j, ic, oc;
+
+    unsigned char *data = stbi_load(filename, &w, &h, &ic, 1);
     image im = make_image(w, h, tc);
 
-    int i, j, ic, oc;
-    unsigned char *data;
-
     for(oc=0; oc < tc; ++oc){
-        if (oc==0) {
-            data = stbi_load(filename, &w, &h, &ic, 1);
-        }
-        else{
+        if (oc>0) {
             chan_filename = get_channel_filename(filename, oc);
-            data = stbi_load(filename, &w, &h, &ic, 1);
+            data = stbi_load(chan_filename, &w, &h, &ic, 1);
             free(chan_filename);
         }
         if (!data) {
@@ -1391,7 +1390,7 @@ image load_image_stb_multi_image(char *filename, int channels)
 
 image load_image_stb(char *filename, int channels)
 {
-    if(channels > 3 && does_file_exist(get_channel_filename(filename,1))){
+    if((!channels || channels > 3) && does_file_exist(get_channel_filename(filename,1))){
         return load_image_stb_multi_image(filename,channels);
     }
     int w, h, c;
