@@ -1072,7 +1072,10 @@ data load_data_detection(int n, char **paths, int m, int w, int h, int boxes, in
 
         place_image(orig, nw, nh, dx, dy, sized);
 
-        //random_distort_image(sized, hue, saturation, exposure);
+        if(sized.h == 3)
+        {
+            random_distort_image(sized, hue, saturation, exposure);
+        }
 
         int flip = rand_int()%2;
         if(flip) flip_image(sized);
