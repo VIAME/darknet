@@ -1,7 +1,7 @@
 
 add_executable( darknet
   art.c
-  attention.c
+#  attention.c
   captcha.c
   cifar.c
   classifier.c
@@ -9,8 +9,8 @@ add_executable( darknet
   darknet.c
   detector.c
   dice.c
-  go.c
-  instance-segmenter.c
+#  go.c
+#  instance-segmenter.c
   lsd.c
   nightmare.c
   regressor.c

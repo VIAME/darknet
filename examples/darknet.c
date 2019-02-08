@@ -13,7 +13,6 @@ extern void run_nightmare(int argc, char **argv);
 extern void run_classifier(int argc, char **argv);
 extern void run_regressor(int argc, char **argv);
 extern void run_segmenter(int argc, char **argv);
-extern void run_isegmenter(int argc, char **argv);
 extern void run_char_rnn(int argc, char **argv);
 extern void run_tag(int argc, char **argv);
 extern void run_cifar(int argc, char **argv);
@@ -437,8 +436,6 @@ int main(int argc, char **argv)
         test_detector("cfg/coco.data", argv[2], argv[3], filename, thresh, .5, outfile, fullscreen);
     } else if (0 == strcmp(argv[1], "cifar")){
         run_cifar(argc, argv);
-    } else if (0 == strcmp(argv[1], "go")){
-        run_go(argc, argv);
     } else if (0 == strcmp(argv[1], "rnn")){
         run_char_rnn(argc, argv);
     } else if (0 == strcmp(argv[1], "coco")){
@@ -449,8 +446,6 @@ int main(int argc, char **argv)
         run_classifier(argc, argv);
     } else if (0 == strcmp(argv[1], "regressor")){
         run_regressor(argc, argv);
-    } else if (0 == strcmp(argv[1], "isegmenter")){
-        run_isegmenter(argc, argv);
     } else if (0 == strcmp(argv[1], "segmenter")){
         run_segmenter(argc, argv);
     } else if (0 == strcmp(argv[1], "art")){
