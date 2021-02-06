@@ -56,7 +56,13 @@ if( USE_GPU )
     -gencode arch=compute_50,code=sm_50
     -gencode arch=compute_52,code=sm_52 )
 
-  if( CUDA_VERSION VERSION_GREATER_EQUAL 8.0 )
+  if( CUDA_VERSION VERSION_GREATER_EQUAL 9.2 )
+    set( CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}
+      -gencode arch=compute_60,code=sm_60
+      -gencode arch=compute_61,code=sm_61
+      -gencode arch=compute_70,code=[sm_70,compute_70]
+      -gencode arch=compute_75,code=[sm_75,compute_75] )
+  elseif( CUDA_VERSION VERSION_GREATER_EQUAL 8.0 )
     set( CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}
       -gencode arch=compute_60,code=[sm_60,compute_60]
       -gencode arch=compute_61,code=[sm_61,compute_61] )
