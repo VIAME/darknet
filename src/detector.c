@@ -1875,8 +1875,10 @@ void draw_object(char *datacfg, char *cfgfile, char *weightfile, char *filename,
                 embed_image(crop, sized, dx, dy);
             }
 
-            show_image_cv(sized, "image_optimization");
-            wait_key_cv(20);
+            if (iteration % 1000 == 0)
+            {
+                save_image(sized, "image_optimization");
+            }
         }
 
         net.train = 0;
