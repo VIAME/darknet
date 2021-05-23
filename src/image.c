@@ -702,12 +702,8 @@ void rgbgr_image(image im)
 
 void show_image(image p, const char *name)
 {
-#ifdef OPENCV
-    show_image_cv(p, name);
-#else
-    fprintf(stderr, "Not compiled with OpenCV, saving to %s.png instead\n", name);
+    fprintf(stderr, "Saving image to %s.png\n", name);
     save_image(p, name);
-#endif  // OPENCV
 }
 
 void save_image_png(image im, const char *name)
