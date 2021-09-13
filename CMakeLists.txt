@@ -50,22 +50,32 @@ if( USE_GPU )
       )
   endif()
 
+  if( CUDA_VERSION VERSION_LESS 11.0 )
+    list(APPEND CUDA_NVCC_FLAGS
+      -gencode arch=compute_30,code=sm_30
+      -gencode arch=compute_35,code=sm_35 )
+  endif()
+
   list(APPEND CUDA_NVCC_FLAGS
-    -gencode arch=compute_30,code=sm_30
-    -gencode arch=compute_35,code=sm_35
     -gencode arch=compute_50,code=sm_50
     -gencode arch=compute_52,code=sm_52 )
 
-  if( CUDA_VERSION VERSION_GREATER_EQUAL 9.2 )
-    set( CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}
-      -gencode arch=compute_60,code=sm_60
-      -gencode arch=compute_61,code=sm_61
-      -gencode arch=compute_70,code=[sm_70,compute_70]
-      -gencode arch=compute_75,code=[sm_75,compute_75] )
-  elseif( CUDA_VERSION VERSION_GREATER_EQUAL 8.0 )
-    set( CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS}
+  if( CUDA_VERSION VERSION_GREATER_EQUAL 8.0 )
+    list(APPEND CUDA_NVCC_FLAGS
       -gencode arch=compute_60,code=[sm_60,compute_60]
       -gencode arch=compute_61,code=[sm_61,compute_61] )
+  endif()
+
+  if( CUDA_VERSION VERSION_GREATER_EQUAL 9.2 )
+    list(APPEND CUDA_NVCC_FLAGS
+      -gencode arch=compute_70,code=[sm_70,compute_70]
+      -gencode arch=compute_75,code=[sm_75,compute_75] )
+  endif()
+
+  if( CUDA_VERSION VERSION_GREATER_EQUAL 11.1 )
+    list(APPEND CUDA_NVCC_FLAGS
+      -gencode arch=compute_80,code=[sm_80,compute_80]
+      -gencode arch=compute_86,code=[sm_86,compute_86] )
   endif()
 
   set( CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS} -Xcompiler )
