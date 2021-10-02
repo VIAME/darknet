@@ -140,6 +140,7 @@ set(INSTALL_INCLUDE_DIR  "include/darknet"           CACHE PATH "Path where head
 set(INSTALL_CMAKE_DIR    "share/darknet"             CACHE PATH "Path where cmake configs will be installed")
 
 if(ENABLE_CUDA)
+  find_package(CUDA QUIET REQUIRED)
   include(CheckLanguage)
   check_language(CUDA)
   if(NOT CMAKE_CUDA_COMPILER)
