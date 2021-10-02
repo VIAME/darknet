@@ -9,6 +9,7 @@
 *.dll
 *.lib
 *.dylib
+*.pyc
 mnist/
 data/
 caffe/
@@ -38,6 +39,8 @@ build/.ninja_deps
 build/.ninja_log
 build/Makefile
 */vcpkg-manifest-install.log
+build.log
+__pycache__/
 
 # OS Generated #
 .DS_Store*

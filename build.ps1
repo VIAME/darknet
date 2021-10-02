@@ -8,6 +8,9 @@ param (
   [switch]$EnableOPENCV = $false,
   [switch]$EnableOPENCV_CUDA = $false,
   [switch]$UseVCPKG = $false,
+  [switch]$InstallDARKNETthroughVCPKG = $false,
+  [switch]$InstallDARKNETdependenciesThroughVCPKGManifest = $false,
+  [switch]$ForceVCPKGDarknetHEAD = $false,
   [switch]$DoNotUpdateVCPKG = $false,
   [switch]$DoNotUpdateDARKNET = $false,
   [switch]$DoNotDeleteBuildFolder = $false,
@@ -17,12 +20,20 @@ param (
   [switch]$ForceStaticLib = $false,
   [switch]$ForceVCPKGCacheRemoval = $false,
   [switch]$ForceSetupVS = $false,
+  [switch]$EnableCSharpWrapper = $false,
+  [switch]$DownloadWeights = $false,
   [Int32]$ForceGCCVersion = 0,
+  [Int32]$ForceOpenCVVersion = 0,
   [Int32]$NumberOfBuildWorkers = 8,
   [string]$AdditionalBuildSetup = ""  # "-DCMAKE_CUDA_ARCHITECTURES=30"
 )
 
-$build_ps1_version = "0.9.2"
+$build_ps1_version = "0.9.6"
+
+$ErrorActionPreference = "SilentlyContinue"
+Stop-Transcript | out-null
+$ErrorActionPreference = "Continue"
+Start-Transcript -Path $PSScriptRoot/build.log
 
 Function MyThrow ($Message) {
   if ($DisableInteractive) {
@@ -144,10 +155,28 @@ if ($PSVersionTable.PSVersion.Major -lt 5) {
 
 if ($IsLinux -or $IsMacOS) {
   $bootstrap_ext = ".sh"
+  $exe_ext = ""
 }
 elseif ($IsWindows -or $IsWindowsPowerShell) {
   $bootstrap_ext = ".bat"
+  $exe_ext = ".exe"
 }
+
+if ($InstallDARKNETdependenciesThroughVCPKGManifest -and -not $InstallDARKNETthroughVCPKG) {
+  Write-Host "You requested darknet dependencies to be installed by vcpkg in manifest mode but you didn't enable installation through vcpkg, doing that for you"
+  $InstallDARKNETthroughVCPKG = $true
+}
+
+if ($InstallDARKNETthroughVCPKG -and -not $UseVCPKG) {
+  Write-Host "You requested darknet to be installed by vcpkg but you didn't enable vcpkg, doing that for you"
+  $UseVCPKG = $true
+}
+
+if ($InstallDARKNETthroughVCPKG -and -not $EnableOPENCV) {
+  Write-Host "You requested darknet to be installed by vcpkg but you didn't enable OpenCV, doing that for you"
+  $EnableOPENCV = $true
+}
+
 if ($UseVCPKG) {
   Write-Host "vcpkg bootstrap script: bootstrap-vcpkg${bootstrap_ext}"
 }
@@ -236,6 +265,15 @@ else {
   Write-Host "VisualStudio integration is enabled, please pass -DoNotSetupVS to the script to disable"
 }
 
+if ($EnableCSharpWrapper -and ($IsWindowsPowerShell -or $IsWindows)) {
+  Write-Host "Yolo C# wrapper integration is enabled. Will be built with Visual Studio generator. Disabling Ninja"
+  $DoNotUseNinja = $true
+}
+else {
+  $EnableCSharpWrapper = $false
+  Write-Host "Yolo C# wrapper integration is disabled, please pass -EnableCSharpWrapper to the script to enable. You must be on Windows!"
+}
+
 if ($DoNotUseNinja) {
   Write-Host "Ninja is disabled"
 }
@@ -252,7 +290,7 @@ else {
 
 Push-Location $PSScriptRoot
 
-$GIT_EXE = Get-Command git 2> $null | Select-Object -ExpandProperty Definition
+$GIT_EXE = Get-Command "git" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
 if (-Not $GIT_EXE) {
   MyThrow("Could not find git, please install it")
 }
@@ -277,7 +315,7 @@ if (Test-Path "$PSScriptRoot/.git") {
   }
 }
 
-$CMAKE_EXE = Get-Command cmake 2> $null | Select-Object -ExpandProperty Definition
+$CMAKE_EXE = Get-Command "cmake" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
 if (-Not $CMAKE_EXE) {
   MyThrow("Could not find CMake, please install it")
 }
@@ -293,11 +331,11 @@ else {
 }
 
 if (-Not $DoNotUseNinja) {
-  $NINJA_EXE = Get-Command ninja 2> $null | Select-Object -ExpandProperty Definition
+  $NINJA_EXE = Get-Command "ninja" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
   if (-Not $NINJA_EXE) {
     DownloadNinja
     $env:PATH += ";${PSScriptRoot}/ninja"
-    $NINJA_EXE = Get-Command ninja 2> $null | Select-Object -ExpandProperty Definition
+    $NINJA_EXE = Get-Command "ninja" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
     if (-Not $NINJA_EXE) {
       $DoNotUseNinja = $true
       Write-Host "Could not find Ninja, unable to download a portable ninja, using msbuild or make backends as a fallback" -ForegroundColor Yellow
@@ -389,6 +427,7 @@ function getLatestVisualStudioWithDesktopWorkloadVersion() {
   return $installationVersion
 }
 
+$vcpkg_root_set_by_this_script = $false
 
 if ((Test-Path env:VCPKG_ROOT) -and $UseVCPKG) {
   $vcpkg_path = "$env:VCPKG_ROOT"
@@ -398,13 +437,15 @@ if ((Test-Path env:VCPKG_ROOT) -and $UseVCPKG) {
 elseif ((Test-Path "${env:WORKSPACE}/vcpkg") -and $UseVCPKG) {
   $vcpkg_path = "${env:WORKSPACE}/vcpkg"
   $env:VCPKG_ROOT = "${env:WORKSPACE}/vcpkg"
+  $vcpkg_root_set_by_this_script = $true
   Write-Host "Found vcpkg in WORKSPACE/vcpkg: $vcpkg_path"
   $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
 }
 elseif (-not($null -eq ${RUNVCPKG_VCPKG_ROOT_OUT})) {
-  if((Test-Path "${RUNVCPKG_VCPKG_ROOT_OUT}") -and $UseVCPKG) {
+  if ((Test-Path "${RUNVCPKG_VCPKG_ROOT_OUT}") -and $UseVCPKG) {
     $vcpkg_path = "${RUNVCPKG_VCPKG_ROOT_OUT}"
     $env:VCPKG_ROOT = "${RUNVCPKG_VCPKG_ROOT_OUT}"
+    $vcpkg_root_set_by_this_script = $true
     Write-Host "Found vcpkg in RUNVCPKG_VCPKG_ROOT_OUT: ${vcpkg_path}"
     $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
   }
@@ -421,6 +462,7 @@ elseif ($UseVCPKG) {
   }
   $vcpkg_path = "$PWD/vcpkg"
   $env:VCPKG_ROOT = "$PWD/vcpkg"
+  $vcpkg_root_set_by_this_script = $true
   Write-Host "Found vcpkg in $PWD/vcpkg: $PWD/vcpkg"
   $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_VCPKG_INTEGRATION:BOOL=ON"
 }
@@ -464,6 +506,16 @@ if ($ForceVCPKGCacheRemoval -and (-Not $UseVCPKG)) {
   Write-Host "VCPKG is not enabled, so local vcpkg binary cache will not be deleted even if requested" -ForegroundColor Yellow
 }
 
+if (($ForceOpenCVVersion -eq 2) -and $UseVCPKG) {
+  Write-Host "You requested OpenCV version 2, so vcpkg will install that version" -ForegroundColor Yellow
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DVCPKG_USE_OPENCV4=OFF -DVCPKG_USE_OPENCV2=ON"
+}
+
+if (($ForceOpenCVVersion -eq 3) -and $UseVCPKG) {
+  Write-Host "You requested OpenCV version 3, so vcpkg will install that version" -ForegroundColor Yellow
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DVCPKG_USE_OPENCV4=OFF -DVCPKG_USE_OPENCV3=ON"
+}
+
 if ($UseVCPKG -and $ForceVCPKGCacheRemoval) {
   if ($IsWindows -or $IsWindowsPowerShell) {
     $vcpkgbinarycachepath = "$env:LOCALAPPDATA/vcpkg/archive"
@@ -482,7 +534,8 @@ if ($UseVCPKG -and $ForceVCPKGCacheRemoval) {
 }
 
 if (-Not $DoNotSetupVS) {
-  if ($null -eq (Get-Command "cl.exe" -ErrorAction SilentlyContinue)) {
+  $CL_EXE = Get-Command "cl" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
+  if ((-Not $CL_EXE) -or ($CL_EXE -match "HostX86\\x86") -or ($CL_EXE -match "HostX64\\x86")) {
     $vsfound = getLatestVisualStudioWithDesktopWorkloadPath
     Write-Host "Found VS in ${vsfound}"
     Push-Location "${vsfound}\Common7\Tools"
@@ -528,7 +581,8 @@ if ($DoNotSetupVS -and $DoNotUseNinja) {
 Write-Host "Setting up environment to use CMake generator: $generator"
 
 if (-Not $IsMacOS -and $EnableCUDA) {
-  if ($null -eq (Get-Command "nvcc" -ErrorAction SilentlyContinue)) {
+  $NVCC_EXE = Get-Command "nvcc" -ErrorAction SilentlyContinue | Select-Object -ExpandProperty Definition
+  if (-Not $NVCC_EXE) {
     if (Test-Path env:CUDA_PATH) {
       $env:PATH += ";${env:CUDA_PATH}/bin"
       Write-Host "Found cuda in ${env:CUDA_PATH}"
@@ -570,39 +624,123 @@ if (-Not $EnableOPENCV_CUDA) {
   $AdditionalBuildSetup = $AdditionalBuildSetup + " -DVCPKG_BUILD_OPENCV_WITH_CUDA:BOOL=OFF"
 }
 
-$build_folder = "./build_release"
-if (-Not $DoNotDeleteBuildFolder) {
-  Write-Host "Removing folder $build_folder" -ForegroundColor Yellow
-  Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $build_folder
+if ($EnableCSharpWrapper) {
+  $AdditionalBuildSetup = $AdditionalBuildSetup + " -DENABLE_CSHARP_WRAPPER:BOOL=ON"
 }
 
-New-Item -Path $build_folder -ItemType directory -Force | Out-Null
-Set-Location $build_folder
-$cmake_args = "-G `"$generator`" ${AdditionalBuildSetup} -S .."
-Write-Host "Configuring CMake project" -ForegroundColor Green
-Write-Host "CMake args: $cmake_args"
-$proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList $cmake_args
-$handle = $proc.Handle
-$proc.WaitForExit()
-$exitCode = $proc.ExitCode
-if (-Not ($exitCode -eq 0)) {
-  MyThrow("Config failed! Exited with error code $exitCode.")
+if ($InstallDARKNETthroughVCPKG) {
+  if ($ForceVCPKGDarknetHEAD) {
+    $headMode = " --head "
+  }
+  $features = "opencv-base"
+  $feature_manifest_opencv = "--x-feature=opencv-base"
+  if ($EnableCUDA) {
+    $features = $features + ",cuda"
+    $feature_manifest_cuda = "--x-feature=cuda"
+  }
+  if ($EnableCUDNN) {
+    $features = $features + ",cudnn"
+    $feature_manifest_cudnn = "--x-feature=cudnn"
+  }
+  if (-not (Test-Path "${env:VCPKG_ROOT}/vcpkg${exe_ext}")) {
+    $proc = Start-Process -NoNewWindow -PassThru -FilePath ${env:VCPKG_ROOT}/bootstrap-vcpkg${bootstrap_ext} -ArgumentList "-disableMetrics"
+    $handle = $proc.Handle
+    $proc.WaitForExit()
+    $exitCode = $proc.ExitCode
+    if (-Not ($exitCode -eq 0)) {
+      MyThrow("Bootstrapping vcpkg failed! Exited with error code $exitCode.")
+    }
+  }
+  if ($InstallDARKNETdependenciesThroughVCPKGManifest) {
+    Write-Host "Running vcpkg in manifest mode to install darknet dependencies"
+    Write-Host "vcpkg install --x-no-default-features $feature_manifest_opencv $feature_manifest_cuda $feature_manifest_cudnn $headMode"
+    $proc = Start-Process -NoNewWindow -PassThru -FilePath "${env:VCPKG_ROOT}/vcpkg${exe_ext}" -ArgumentList " install --x-no-default-features $feature_manifest_opencv $feature_manifest_cuda $feature_manifest_cudnn $headMode "
+    $handle = $proc.Handle
+    $proc.WaitForExit()
+    $exitCode = $proc.ExitCode
+    if (-Not ($exitCode -eq 0)) {
+      MyThrow("Installing darknet through vcpkg failed! Exited with error code $exitCode.")
+    }
+  }
+  else {
+    Write-Host "Running vcpkg to install darknet"
+    Write-Host "vcpkg install darknet[${features}] $headMode --recurse"
+    Push-Location ${env:VCPKG_ROOT}
+    if ($ForceVCPKGDarknetHEAD) {
+      $proc = Start-Process -NoNewWindow -PassThru -FilePath "${env:VCPKG_ROOT}/vcpkg${exe_ext}" -ArgumentList " --feature-flags=-manifests remove darknet --recurse "
+      $handle = $proc.Handle
+      $proc.WaitForExit()
+      $exitCode = $proc.ExitCode
+      if (-Not ($exitCode -eq 0)) {
+        MyThrow("Removing darknet through vcpkg failed! Exited with error code $exitCode.")
+      }
+    }
+    $proc = Start-Process -NoNewWindow -PassThru -FilePath "${env:VCPKG_ROOT}/vcpkg${exe_ext}" -ArgumentList " --feature-flags=-manifests upgrade --no-dry-run "
+    $handle = $proc.Handle
+    $proc.WaitForExit()
+    $exitCode = $proc.ExitCode
+    if (-Not ($exitCode -eq 0)) {
+      MyThrow("Upgrading vcpkg installed ports failed! Exited with error code $exitCode.")
+    }
+    $proc = Start-Process -NoNewWindow -PassThru -FilePath "${env:VCPKG_ROOT}/vcpkg${exe_ext}" -ArgumentList " --feature-flags=-manifests install darknet[${features}] $headMode --recurse "  # "-manifest"  disables the manifest feature, so that if vcpkg is a subfolder of darknet, the vcpkg.json inside darknet folder does not trigger errors due to automatic manifest mode
+    $handle = $proc.Handle
+    $proc.WaitForExit()
+    $exitCode = $proc.ExitCode
+    if (-Not ($exitCode -eq 0)) {
+      MyThrow("Installing darknet dependencies through vcpkg failed! Exited with error code $exitCode.")
+    }
+    Pop-Location
+  }
 }
-Write-Host "Building CMake project" -ForegroundColor Green
-$proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList "--build . ${selectConfig} --parallel ${NumberOfBuildWorkers} --target install"
-$handle = $proc.Handle
-$proc.WaitForExit()
-$exitCode = $proc.ExitCode
-if (-Not ($exitCode -eq 0)) {
-  MyThrow("Config failed! Exited with error code $exitCode.")
+else {
+  $build_folder = "./build_release"
+  if (-Not $DoNotDeleteBuildFolder) {
+    Write-Host "Removing folder $build_folder" -ForegroundColor Yellow
+    Remove-Item -Force -Recurse -ErrorAction SilentlyContinue $build_folder
+  }
+  New-Item -Path $build_folder -ItemType directory -Force | Out-Null
+  Set-Location $build_folder
+  $cmake_args = "-G `"$generator`" ${AdditionalBuildSetup} -S .."
+  Write-Host "Configuring CMake project" -ForegroundColor Green
+  Write-Host "CMake args: $cmake_args"
+  $proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList $cmake_args
+  $handle = $proc.Handle
+  $proc.WaitForExit()
+  $exitCode = $proc.ExitCode
+  if (-Not ($exitCode -eq 0)) {
+    MyThrow("Config failed! Exited with error code $exitCode.")
+  }
+  Write-Host "Building CMake project" -ForegroundColor Green
+  $proc = Start-Process -NoNewWindow -PassThru -FilePath $CMAKE_EXE -ArgumentList "--build . ${selectConfig} --parallel ${NumberOfBuildWorkers} --target install"
+  $handle = $proc.Handle
+  $proc.WaitForExit()
+  $exitCode = $proc.ExitCode
+  if (-Not ($exitCode -eq 0)) {
+    MyThrow("Config failed! Exited with error code $exitCode.")
+  }
+  Remove-Item -Force -ErrorAction SilentlyContinue DarknetConfig.cmake
+  Remove-Item -Force -ErrorAction SilentlyContinue DarknetConfigVersion.cmake
+  $dllfiles = Get-ChildItem ./${dllfolder}/*.dll
+  if ($dllfiles) {
+    Copy-Item $dllfiles ..
+  }
+  Set-Location ..
+  Copy-Item cmake/Modules/*.cmake share/darknet/
+  Pop-Location
 }
-Remove-Item -Force -ErrorAction SilentlyContinue DarknetConfig.cmake
-Remove-Item -Force -ErrorAction SilentlyContinue DarknetConfigVersion.cmake
-$dllfiles = Get-ChildItem ./${dllfolder}/*.dll
-if ($dllfiles) {
-  Copy-Item $dllfiles ..
-}
-Set-Location ..
-Copy-Item cmake/Modules/*.cmake share/darknet/
+
 Write-Host "Build complete!" -ForegroundColor Green
-Pop-Location
+
+if ($DownloadWeights) {
+  Write-Host "Downloading weights..." -ForegroundColor Yellow
+  & $PSScriptRoot/scripts/download_weights.ps1
+  Write-Host "Weights downloaded" -ForegroundColor Green
+}
+
+if ($vcpkg_root_set_by_this_script) {
+  $env:VCPKG_ROOT = $null
+}
+
+$ErrorActionPreference = "SilentlyContinue"
+Stop-Transcript | out-null
+$ErrorActionPreference = "Continue"
